@@ -9,6 +9,8 @@ import tempfile
 import subprocess
 import pygame
 from io import BytesIO
+import wave
+
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
@@ -119,11 +121,24 @@ def play_response(text):
         else:
             print(f"Unexpected output: {line.strip()}")
 
-            with BytesIO(wav_data) as f:
-                pygame.mixer.music.load(f)
-                pygame.mixer.music.play()
-                while pygame.mixer.music.get_busy():
-                    time.sleep(0.1)
+    with BytesIO(wav_data) as f:
+        # Use wave and pyaudio modules to play the audio
+        wav_file = wave.open(f, 'rb')
+        stream = p.open(format=p.get_format_from_width(wav_file.getsampwidth()),
+                        channels=wav_file.getnchannels(),
+                        rate=wav_file.getframerate(),
+                        output=True)
+
+        # Read and play audio data in chunks
+        data = wav_file.readframes(1024)
+        while data:
+            stream.write(data)
+            data = wav_file.readframes(1024)
+
+        # Stop and close the stream
+        stream.stop_stream()
+        stream.close()
+
 
 # Main loop
 while True:
