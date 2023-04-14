@@ -8,6 +8,8 @@ from io import BytesIO
 import sys
 import json
 from vosk import Model, KaldiRecognizer
+import tempfile
+
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
@@ -77,11 +79,15 @@ def get_response(text):
 # Function to convert text to speech and play it
 def play_response(text):
     tts = gTTS(text=text, lang='en')
-    with BytesIO() as f:
-        tts.save(f)
-        f.seek(0)
-        mixer.music.load(f)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as f:
+        tts.save(f.name)
+        mixer.music.load(f.name)
         mixer.music.play()
+        while mixer.music.get_busy():
+            time.sleep(0.1)
+
+    os.remove(f.name)
 
 # Main loop
 while True:
