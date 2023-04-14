@@ -2,11 +2,12 @@ import time
 import os
 import openai
 import pyaudio
-import speech_recognition as sr
 from gtts import gTTS
 from pygame import mixer
 from io import BytesIO
 import sys
+import json
+from vosk import Model, KaldiRecognizer
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
@@ -17,52 +18,50 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 # Set up PyAudio
 p = pyaudio.PyAudio()
 
-# Set up speech recognition
-r = sr.Recognizer()
-
 # Set up the audio playback
 mixer.init()
 
 # Activation word
 activation_word = "margaret"
 
+# Vosk Model
+model = Model("vosk-model-small-en-us-0.15")
 
 # Function to listen for activation word
 def listen_for_activation_word():
-    with sr.Microphone(sample_rate=48000, chunk_size=1024) as source:
-        r = sr.Recognizer()
-        print("Listening for activation word...")
-        r.pause_threshold = 1.0
-        r.adjust_for_ambient_noise(source, duration=3)
-        audio = r.listen(source)
-        try:
-            text = r.recognize_google(audio)
-            if activation_word in text.lower():
-                return True
-        except sr.UnknownValueError:
-            pass
-        except sr.RequestError:
-            print("Could not request results from Google Speech Recognition service")
-    return False
+    recognizer = KaldiRecognizer(model, 48000)
+    stream = p.open(rate=48000, channels=1, format=pyaudio.paInt16, input=True, frames_per_buffer=1024)
 
+    print("Listening for activation word...")
+
+    while True:
+        data = stream.read(1024)
+        if recognizer.AcceptWaveform(data):
+            result = json.loads(recognizer.Result())
+            text = result.get('text')
+            if activation_word in text.lower():
+                stream.stop_stream()
+                stream.close()
+                return True
+    stream.stop_stream()
+    stream.close()
 
 # Function to transcribe speech to text
 def transcribe_speech():
-    with sr.Microphone(sample_rate=48000, chunk_size=1024) as source:
-        r = sr.Recognizer()
-        print("Listening for your question...")
-        r.pause_threshold = 1.0
-        r.adjust_for_ambient_noise(source, duration=3)
-        audio = r.listen(source)
-        try:
-            text = r.recognize_google(audio)
-            return text
-        except sr.UnknownValueError:
-            print("Could not understand audio")
-        except sr.RequestError:
-            print("Could not request results from Google Speech Recognition service")
-    return None
+    recognizer = KaldiRecognizer(model, 48000)
+    stream = p.open(rate=48000, channels=1, format=pyaudio.paInt16, input=True, frames_per_buffer=1024)
 
+    print("Listening for your question...")
+    while True:
+        data = stream.read(1024)
+        if recognizer.AcceptWaveform(data):
+            result = json.loads(recognizer.Result())
+            text = result.get('text')
+            stream.stop_stream()
+            stream.close()
+            return text
+    stream.stop_stream()
+    stream.close()
 
 # Function to use ChatCompletion and get response
 def get_response(text):
