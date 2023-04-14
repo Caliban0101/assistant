@@ -104,31 +104,26 @@ def close_mimic3():
         mimic3_process.terminate()
         mimic3_process = None
 
-
-def play_response(response_text):
-    global mimic3_process
-    if mimic3_process is None:
-        return
-
-    # Use Mimic3 to generate speech from response_text
-    mimic3_process.stdin.write(response_text + "\n")
+def play_response(text):
+    init_mimic3()
+    mimic3_process.stdin.write(text + "\n")
     mimic3_process.stdin.flush()
+
     wav_data = b""
     while True:
         line = mimic3_process.stdout.readline()
-        if line.startswith("wave written:"):
-            wav_data += bytes.fromhex(line[len("wave written: "):])
-        elif line.startswith("(END)"):
+        if line.startswith("WV:"):
+            wav_data.extend(bytes.fromhex(line[3:].strip()))
+        elif line.startswith("WV-END"):
             break
+        else:
+            print(f"Unexpected output: {line.strip()}")
 
-    # Play generated speech using pygame
-    with BytesIO(wav_data) as f:
-        pygame.mixer.init(frequency=16000)
-        pygame.mixer.music.load(f)
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            continue
-
+            with BytesIO(wav_data) as f:
+                pygame.mixer.music.load(f)
+                pygame.mixer.music.play()
+                while pygame.mixer.music.get_busy():
+                    time.sleep(0.1)
 
 # Main loop
 while True:
