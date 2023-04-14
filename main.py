@@ -40,7 +40,7 @@ def open_stream(pa):
 def listen_for_activation_word(pa):
     try:
         stream = open_stream(pa)
-        with sr.AudioSource(stream) as source:
+        with sr.microphone(stream=stream) as source:
             print("Listening for activation word...")
             r.pause_threshold = 1.0
             r.adjust_for_ambient_noise(source, duration=3)
@@ -62,7 +62,7 @@ def listen_for_activation_word(pa):
 def transcribe_speech(pa):
     try:
         stream = open_stream(pa)
-        with sr.AudioSource(stream) as source:
+        with sr.microphone(stream=stream) as source:
             print("Listening for your question...")
             r.pause_threshold = 1.0
             r.adjust_for_ambient_noise(source, duration=3)
