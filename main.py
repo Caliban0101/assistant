@@ -67,10 +67,12 @@ def transcribe_speech():
 
 # Function to use ChatCompletion and get response
 def get_response(text):
+    with open("sysmsg.txt", "r") as file:
+        system_message = file.read().strip()
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": system_message},
             {"role": "user", "content": text}
         ]
     )
