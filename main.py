@@ -72,7 +72,7 @@ def get_response(text):
             {"role": "user", "content": text}
         ]
     )
-    return response.choices[0].content.strip()
+    return response.choices[0].message['content'].strip()
 
 # Function to convert text to speech and play it
 def play_response(text):
