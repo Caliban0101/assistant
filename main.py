@@ -137,3 +137,15 @@ def play_response(text):
 
         # Close Mimic3 when done
         close_mimic3()
+
+# Main loop
+while True:
+    if listen_for_activation_word():
+        question = transcribe_speech()
+        if question:
+            print("You asked:", question)
+            response_text = get_response(question)
+            print("Assistant:", response_text)
+            play_response(response_text)
+        else:
+            print("Could not understand your question")
