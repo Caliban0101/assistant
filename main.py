@@ -87,13 +87,15 @@ mimic3_process = None
 def init_mimic3():
     global mimic3_process
     if mimic3_process is None:
+        env_path = "/home/rcolman/mimic3/venv"
         mimic3_process = subprocess.Popen(
-            "mimic3 --voice en_US/m-ailabs_low#mary_ann --interactive",
+            f"{env_path}/mimic3 --voice en_US/m-ailabs_low#mary_ann --interactive",
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=True,
-            text=True
+            text=True,
+            env={"PATH": env_path}
         )
 
 def close_mimic3():
@@ -123,21 +125,6 @@ def play_response(text):
                 while pygame.mixer.music.get_busy():
                     time.sleep(0.1)
 
-        # Main loop
-        while True:
-            if listen_for_activation_word():
-                question = transcribe_speech()
-                if question:
-                    print("You asked:", question)
-                    response_text = get_response(question)
-                    print("Assistant:", response_text)
-                    play_response(response_text)
-                else:
-                    print("Could not understand your question")
-
-        # Close Mimic3 when done
-        close_mimic3()
-
 # Main loop
 while True:
     if listen_for_activation_word():
@@ -149,3 +136,7 @@ while True:
             play_response(response_text)
         else:
             print("Could not understand your question")
+
+# Close Mimic3 when done
+close_mimic3()
+
