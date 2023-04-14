@@ -42,11 +42,17 @@ def listen_for_activation_word():
             result = json.loads(recognizer.Result())
             text = result.get('text')
             if activation_word in text.lower():
+                # Play the ding sound
+                ding_sound = "ping.mp3"  # Replace with your file name
+                mixer.music.load(ding_sound)
+                mixer.music.play()
+
                 stream.stop_stream()
                 stream.close()
                 return True
     stream.stop_stream()
     stream.close()
+
 
 # Function to transcribe speech to text
 def transcribe_speech():
