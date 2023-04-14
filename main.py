@@ -9,7 +9,7 @@ from io import BytesIO
 import sys
 
 if not sys.warnoptions:
-        os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
+    os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
 
 # Initialize OpenAI API
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -26,64 +26,58 @@ mixer.init()
 # Activation word
 activation_word = "margaret"
 
-# Function to listen for activation word
-def listen_for_activation_word():
-        pa = pyaudio.PyAudio()
-        stream = pa.open(
-                rate=48000,
-                channels=1,
-                format=pyaudio.paInt24,
-                input=True,
-                frames_per_buffer=1024,
-        )
+def open_stream(pa):
+    stream = pa.open(
+        rate=48000,
+        channels=1,
+        format=pyaudio.paInt24,
+        input=True,
+        frames_per_buffer=1024,
+    )
+    return stream
 
-        r = sr.Recognizer()
-    with sr.AudioSource(stream) as source:
-        print("Listening for activation word...")
-        r.pause_threshold = 1.0
-	r.adjus_for_ambient_noise(source, duration=3)
-        audio = r.listen(source)
-        try:
-            text = r.recognize_google(audio)
-            if activation_word in text.lower():
-                return True
-        except sr.UnknownValueError:
-            pass
-        except sr.RequestError:
-            print("Could not request results from Google Speech Recognition service")
-    return False
-    stream.stop_stream()
-    stream.close()
-    pa.terminate()
+# Function to listen for activation word
+def listen_for_activation_word(pa):
+    try:
+        stream = open_stream(pa)
+        with sr.AudioSource(stream) as source:
+            print("Listening for activation word...")
+            r.pause_threshold = 1.0
+            r.adjust_for_ambient_noise(source, duration=3)
+            audio = r.listen(source)
+            try:
+                text = r.recognize_google(audio)
+                if activation_word in text.lower():
+                    return True
+            except sr.UnknownValueError:
+                pass
+            except sr.RequestError:
+                print("Could not request results from Google Speech Recognition service")
+        return False
+    finally:
+        stream.stop_stream()
+        stream.close()
 
 # Function to transcribe speech to text
-def transcribe_speech():
-        pa = pyaudio.PyAudio()
-        stream = pa.open(
-                rate=48000,
-                channels=1,
-                format=pyaudio.paInt24,
-                input=True,
-                Frames_per_buffer=1024,
-        )
-        r = sr.Recognizer()
-    with sr.AudioSource(stream) as source:
-        print("Listening for your question...")
-        r.pause_threshold = 1.0
-        r.adjust_for_ambient_noise(source, duration=3)
-        audio = r.listen(source)
-        try:
-            text = r.recognize_google(audio)
-            return text
-        except sr.UnknownValueError:
-            print("Could not understand audio")
-        except sr.RequestError:
-            print("Could not request results from Google Speech Recognition service")
-    return None
-    stream.stop_stream()
-    stream.close()
-    pa.terminate()
-
+def transcribe_speech(pa):
+    try:
+        stream = open_stream(pa)
+        with sr.AudioSource(stream) as source:
+            print("Listening for your question...")
+            r.pause_threshold = 1.0
+            r.adjust_for_ambient_noise(source, duration=3)
+            audio = r.listen(source)
+            try:
+                text = r.recognize_google(audio)
+                return text
+            except sr.UnknownValueError:
+                print("Could not understand audio")
+            except sr.RequestError:
+                print("Could not request results from Google Speech Recognition service")
+        return None
+    finally:
+        stream.stop_stream()
+        stream.close()
 
 # Function to use ChatCompletion and get response
 def get_response(text):
@@ -106,13 +100,17 @@ def play_response(text):
         mixer.music.play()
 
 # Main loop
-while True:
-    if listen_for_activation_word():
-        question = transcribe_speech()
-        if question:
-            print("You asked:", question)
-            response_text = get_response(question)
-            print("Assistant:", response_text)
-            play_response(response_text)
-        else:
-            print("Could not understand your question")
+pa = pyaudio.PyAudio()
+try:
+    while True:
+        if listen_for_activation_word(pa):
+            question = transcribe_speech(pa)
+            if question:
+                print("You asked:", question)
+                response_text = get_response(question)
+                print("Assistant:", response_text)
+                play_response(response_text)
+            else:
+                print("Could not understand your question")
+finally:
+    pa.terminate()
