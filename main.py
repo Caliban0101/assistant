@@ -133,7 +133,7 @@ async def play_response(text):
             data=sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-
+        print("sent")
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
 
