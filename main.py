@@ -135,14 +135,13 @@ def play_response(text):
             if response.status_code == 200:
                 wav_data = BytesIO(response.content)
 
-                with wav_data as f:
-                    wav_file = wave.open(f, "rb")
-                    audio_segment = AudioSegment.from_file(wav_file, format="wav")
+                # Pass the wav_data directly to AudioSegment.from_file
+                audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-                    if combined_audio is None:
-                        combined_audio = audio_segment
-                    else:
-                        combined_audio += audio_segment
+                if combined_audio is None:
+                    combined_audio = audio_segment
+                else:
+                    combined_audio += audio_segment
             else:
                 print(f"Error: Mimic3 server returned status code {response.status_code}")
 
@@ -151,6 +150,7 @@ def play_response(text):
         play(combined_audio)
     else:
         print("No audio data to play.")
+
 
 # Function to play the audio using pydub
 def play(audio_segment):
