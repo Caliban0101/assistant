@@ -121,6 +121,7 @@ def audio_player():
             break
         play_async(audio_segment)
         audio_queue.task_done()
+        time.sleep(audio_segment.duration_seconds)  # Wait for the current audio segment to finish playing
 
 player_thread = threading.Thread(target=audio_player)
 player_thread.start()
@@ -153,7 +154,7 @@ async def play_response(text):
     # Stop the player thread after all audio segments have been processed
     audio_queue.put(None)
     player_thread.join()
-    
+
 # Main loop
 while True:
     if listen_for_activation_word():
