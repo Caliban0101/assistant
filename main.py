@@ -30,7 +30,7 @@ p = pyaudio.PyAudio()
 pygame.mixer.init()
 
 # Activation word
-activation_word = "margaret"
+activation_word = "minerva"
 
 # Vosk Model
 model = Model("vosk-model-small-en-us-0.15")
