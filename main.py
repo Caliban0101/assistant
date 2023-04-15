@@ -92,15 +92,23 @@ def play_response(text):
     env_path = "/home/rcolman/mimic3/.venv/bin"
     voice = "en_US/m-ailabs_low#mary_ann"
 
-    mimic3_process = subprocess.Popen(
-        [f"{env_path}/mimic3", "-t", text, "--voice", voice],
-        stderr=subprocess.PIPE,
-        env={"PATH": env_path},
-    )
+    with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as tmp_file:
+        tmp_file.write(text)
+        tmp_file.flush()
 
-    stderr_data, _ = mimic3_process.communicate()
-    if mimic3_process.returncode != 0:
+        mimic3_process = subprocess.Popen(
+            [f"{env_path}/mimic3", "--interactive", "--voice", voice],
+            stdin=tmp_file,
+            stderr=subprocess.PIPE,
+            env={"PATH": env_path},
+        )
+
+        stderr_data, _ = mimic3_process.communicate()
+        os.unlink(tmp_file.name)
+
+    if mimic3_process.returncode != 0 and stderr_data:
         print(f"Mimic3 encountered an error: {stderr_data.decode('utf-8')}")
+
 
 
 
