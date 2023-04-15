@@ -96,11 +96,15 @@ def play_response(text):
         tmp_file.write(text)
         tmp_file.flush()
 
+        # Update the PATH to include the virtual environment's bin directory
+        my_env = os.environ.copy()
+        my_env["PATH"] = f"{env_path}:{my_env['PATH']}"
+
         mimic3_process = subprocess.Popen(
-            [f"{env_path}/mimic3", "--interactive", "--voice", voice],
+            ["mimic3", "--interactive", "--voice", voice],
             stdin=tmp_file,
             stderr=subprocess.PIPE,
-            env={"PATH": env_path},
+            env=my_env,
         )
 
         stderr_data, _ = mimic3_process.communicate()
