@@ -33,7 +33,7 @@ activation_word = "margaret"
 model = Model("vosk-model-small-en-us-0.15")
 
 # Mimic3 server URL
-mimic3_server_url = "http://localhost:59125"
+mimic3_server_url = " http://0.0.0.0:59125"
 
 # Function to listen for activation word
 def listen_for_activation_word():
