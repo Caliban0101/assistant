@@ -93,44 +93,15 @@ def play_response(text):
     voice = "en_US/m-ailabs_low#mary_ann"
 
     mimic3_process = subprocess.Popen(
-        [f"{env_path}/mimic3", "--interactive", "--process-on-blank-line", "--voice", voice],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
+        [f"{env_path}/mimic3", "-t", text, "--voice", voice],
         stderr=subprocess.PIPE,
-        text=True,
         env={"PATH": env_path},
     )
 
-    mimic3_process.stdin.write(text + "\n")
-    mimic3_process.stdin.flush()
+    stderr_data, _ = mimic3_process.communicate()
+    if mimic3_process.returncode != 0:
+        print(f"Mimic3 encountered an error: {stderr_data.decode('utf-8')}")
 
-    wav_data = b""
-    while True:
-        line = mimic3_process.stdout.readline()
-        if line.startswith("WV:"):
-            wav_data.extend(bytes.fromhex(line[3:].strip()))
-        elif line.startswith("WV-END"):
-            break
-        else:
-            print(f"Unexpected output: {line.strip()}")
-
-    with BytesIO(wav_data) as f:
-        # Use wave and pyaudio modules to play the audio
-        wav_file = wave.open(f, 'rb')
-        stream = p.open(format=p.get_format_from_width(wav_file.getsampwidth()),
-                        channels=wav_file.getnchannels(),
-                        rate=wav_file.getframerate(),
-                        output=True)
-
-        # Read and play audio data in chunks
-        data = wav_file.readframes(1024)
-        while data:
-            stream.write(data)
-            data = wav_file.readframes(1024)
-
-        # Stop and close the stream
-        stream.stop_stream()
-        stream.close()
 
 
 
