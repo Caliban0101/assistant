@@ -122,7 +122,7 @@ def play_audio_from_queue(audio_queue):
     stream.close()
 
 def play_response(text):
-    env_path = "/home/rcolman"
+    env_path = "/home/rcolman/mimic3/venv"
     voice = "en_US/m-ailabs_low#mary_ann"
 
     audio_queue = Queue(maxsize=5)
@@ -130,7 +130,7 @@ def play_response(text):
     audio_thread.start()
 
     mimic3_process = subprocess.Popen(
-        [f"{env_path}/mimic3", "--interactive", "--process-on-blank-line", "--voice", voice],
+        [f"{env_path}/bin/mimic3", "--interactive", "--process-on-blank-line", "--voice", voice],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -140,6 +140,7 @@ def play_response(text):
 
     mimic3_process.stdin.write(text + "\n")
     mimic3_process.stdin.flush()
+
 
 
 # Main loop
