@@ -97,7 +97,7 @@ def get_response(text):
         event_text = event['choices'][0]['delta']
         content = event_text.get('content', '')
         response_text += content
-        play_response(content.encode('utf-8'))
+        play_response(content)
         time.sleep(delay_time)
 
     return response_text.strip()
