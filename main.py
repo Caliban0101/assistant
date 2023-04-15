@@ -115,7 +115,7 @@ def play_response(text):
     voice = "en_US/vctk_low#p264"
 
     # Split the input text into individual lines
-    sentences = text.split('\n')
+    sentences = text.split('.')
 
     # Process each sentence
     for sentence in sentences:
