@@ -145,12 +145,14 @@ async def play_response(text):
             print(f"Error: Mimic3 server returned status code {response.status_code}")
 
     # Play the combined audio with a 5-sentence buffer
-    buffer_size = 5
+    buffer_size = 2
     for i, audio_segment in enumerate(combined_audio):
         if i >= buffer_size:
             asyncio.ensure_future(play_audio(audio_segment))
+            await asyncio.sleep(len(audio_segment) / 1000)  # Wait for the duration of the current audio segment
         else:
             play_async(audio_segment)
+
 
 
 
