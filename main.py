@@ -89,7 +89,7 @@ def get_response(text):
 
 
 def play_response(text):
-    env_path = "/home/rcolman"
+    env_path = "/home/rcolman/mimic3/.venv/bin"
     voice = "en_US/m-ailabs_low#mary_ann"
 
     mimic3_process = subprocess.Popen(
