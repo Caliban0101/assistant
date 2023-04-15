@@ -134,6 +134,7 @@ async def play_response(text):
 
     # Process each sentence
     for sentence in sentences:
+        if sentence is not None:
         # Send a request to the Mimic3 server
         response = requests.post(
             f"{mimic3_server_url}/api/tts?voice={voice}",
