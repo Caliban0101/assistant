@@ -16,6 +16,8 @@ import requests
 from tempfile import NamedTemporaryFile
 import nltk
 from pydub import AudioSegment
+from pydub.playback import play
+
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
