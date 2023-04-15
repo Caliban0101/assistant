@@ -111,9 +111,9 @@ def get_response(text):
     return reply
 
 
-audio_queue = queue.Queue()
+audio_queue = Queue()
 
-async def play_response(text):
+def play_response(text):
     voice = "en_US/vctk_low#p264"
 
     # Split the input text into individual lines
@@ -152,19 +152,15 @@ def audio_player():
     while True:
         next_audio = audio_queue.get()
         if next_audio is None:
-            if current_audio is not None:
-                play(current_audio)
             break
 
         if current_audio is None:
             current_audio = next_audio
         else:
             current_audio += next_audio
-            play(current_audio)  # Move this line inside the else block
 
-        # Reset current_audio for the next playback cycle
-        current_audio = None  # This line is added
-
+        play(current_audio)
+        current_audio = None  # Reset current_audio for the next playback cycle
 
 # Main loop
 while True:
