@@ -90,7 +90,7 @@ def get_response(text):
     return response.choices[0].message['content'].strip()
 
 def play_response(text):
-    voice = "en_US/m-ailabs_low#mary_ann"
+    voice = "en_US/vctk_low#p264"
 
     # Send a request to the Mimic3 server
     response = requests.post(
