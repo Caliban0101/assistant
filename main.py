@@ -18,7 +18,7 @@ from pydub import AudioSegment
 from pydub.playback import play
 import asyncio
 from pydub.playback import _play_with_simpleaudio as play_async
-import queue
+from queue import Queue
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
