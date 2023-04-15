@@ -114,7 +114,7 @@ def get_response(text):
 audio_queue = Queue()
 
 async def play_response(text):
-    voice = "en_US/vctk_low#p264"
+    voice = "fr_FR/m-ailabs_low#gilles_g_le_blanc"
 
     # Split the input text into individual lines
     sentences = text.split(".")
