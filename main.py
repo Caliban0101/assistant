@@ -33,7 +33,7 @@ activation_word = "margaret"
 model = Model("vosk-model-small-en-us-0.15")
 
 # Mimic3 server URL
-mimic3_server_url = " http://0.0.0.0:59125"
+mimic3_server_url = "http://0.0.0.0:59125"
 
 # Function to listen for activation word
 def listen_for_activation_word():
@@ -94,7 +94,9 @@ def play_response(text):
 
     # Send a request to the Mimic3 server
     response = requests.post(
-        f"{mimic3_server_url}/api/tts?voice={voice} --text {text}",
+        f"{mimic3_server_url}/api/tts?voice={voice}",
+        data=text.encode("utf-8"),
+        headers={"Content-Type": "text/plain"},
     )
 
     if response.status_code == 200:
