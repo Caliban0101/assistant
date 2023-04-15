@@ -13,6 +13,9 @@ import pygame
 from io import BytesIO
 import wave
 import requests
+from tempfile import NamedTemporaryFile
+import nltk
+from pydub import AudioSegment
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
@@ -107,34 +110,53 @@ def get_response(text):
 def play_response(text):
     voice = "en_US/vctk_low#p264"
 
-    # Send a request to the Mimic3 server
-    response = requests.post(
-        f"{mimic3_server_url}/api/tts?voice={voice}",
-        data=text.encode("utf-8"),
-        headers={"Content-Type": "text/plain"},
-    )
+    # Split the input text into individual lines or sentences
+    sentences = nltk.tokenize.sent_tokenize(text)
 
-    if response.status_code == 200:
-        wav_data = BytesIO(response.content)
+    # Process each sentence
+    combined_audio = None
+    for sentence in sentences:
+        # Create a temporary file to store the current sentence
+        with NamedTemporaryFile(delete=False, mode="w+") as temp_file:
+            temp_file.write(sentence)
+            temp_file.flush()
 
-        with wav_data as f:
-            wav_file = wave.open(f, 'rb')
-            stream = p.open(format=p.get_format_from_width(wav_file.getsampwidth()),
-                            channels=wav_file.getnchannels(),
-                            rate=wav_file.getframerate(),
-                            output=True)
+            # Send a request to the Mimic3 server
+            with open(temp_file.name, "rb") as file_data:
+                response = requests.post(
+                    f"{mimic3_server_url}/api/tts?voice={voice}",
+                    data=file_data,
+                    headers={"Content-Type": "text/plain"},
+                )
 
-            # Read and play audio data in chunks
-            data = wav_file.readframes(1024)
-            while data:
-                stream.write(data)
-                data = wav_file.readframes(1024)
+            # Remove the temporary file
+            os.unlink(temp_file.name)
 
-            # Stop and close the stream
-            stream.stop_stream()
-            stream.close()
+            if response.status_code == 200:
+                wav_data = BytesIO(response.content)
+
+                with wav_data as f:
+                    wav_file = wave.open(f, "rb")
+                    audio_segment = AudioSegment.from_file(wav_file, format="wav")
+
+                    if combined_audio is None:
+                        combined_audio = audio_segment
+                    else:
+                        combined_audio += audio_segment
+            else:
+                print(f"Error: Mimic3 server returned status code {response.status_code}")
+
+    # Play the combined audio
+    if combined_audio:
+        play(combined_audio)
     else:
-        print(f"Error: Mimic3 server returned status code {response.status_code}")
+        print("No audio data to play.")
+
+# Function to play the audio using pydub
+def play(audio_segment):
+    from pydub.playback import play as playback
+
+    playback(audio_segment)
 
 # Main loop
 while True:
