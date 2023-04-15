@@ -115,61 +115,26 @@ def play_response(text):
     # Split the input text into individual lines
     sentences = text.split('\n')
 
-    # Create a function to play the audio_segment in a separate thread
-    def play_audio(audio_segment):
-        # Export audio_segment to a BytesIO object as an MP3
-        audio_data = BytesIO()
-        audio_segment.export(audio_data, format="mp3")
-        audio_data.seek(0)
+    # Process each sentence
+    for sentence in sentences:
+        # Send a request to the Mimic3 server
+        response = requests.post(
+            f"{mimic3_server_url}/api/tts?voice={voice}",
+            data=sentence,
+            headers={"Content-Type": "text/plain"},
+        )
 
-        # Load the audio data into pygame.mixer.music
-        pygame.mixer.music.load(audio_data)
+        if response.status_code == 200:
+            wav_data = BytesIO(response.content)
 
-        # Play the audio and wait for its completion
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            pygame.time.Clock().tick(10)
+            # Pass the wav_data directly to AudioSegment.from_file
+            audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-    # Process sentences and buffer the playback after 5 sentences
-    buffered_audio = AudioSegment.empty()
-    buffer_size = 5
+            # Play the audio segment
+            play(audio_segment)
+        else:
+            print(f"Error: Mimic3 server returned status code {response.status_code}")
 
-    for idx, sentence in enumerate(sentences, start=1):
-        # Create a temporary file to store the current sentence
-        with NamedTemporaryFile(delete=False, mode="w+") as temp_file:
-            temp_file.write(sentence)
-            temp_file.flush()
-
-            # Send a request to the Mimic3 server
-            with open(temp_file.name, "rb") as file_data:
-                response = requests.post(
-                    f"{mimic3_server_url}/api/tts?voice={voice}",
-                    data=file_data,
-                    headers={"Content-Type": "text/plain"},
-                )
-
-            # Remove the temporary file
-            os.unlink(temp_file.name)
-
-            if response.status_code == 200:
-                wav_data = BytesIO(response.content)
-
-                # Pass the wav_data directly to AudioSegment.from_file
-                audio_segment = AudioSegment.from_file(wav_data, format="wav")
-
-                buffered_audio += audio_segment
-
-                # Play the buffered_audio after processing 5 sentences or reaching the end
-                if idx % buffer_size == 0 or idx == len(sentences):
-                    playback_thread = threading.Thread(target=play_audio, args=(buffered_audio,))
-                    playback_thread.start()
-                    playback_thread.join()
-
-                    # Reset the buffered_audio
-                    buffered_audio = AudioSegment.empty()
-
-            else:
-                print(f"Error: Mimic3 server returned status code {response.status_code}")
 
 
 
