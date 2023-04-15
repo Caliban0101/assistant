@@ -77,17 +77,32 @@ def transcribe_speech():
     stream.close()
 
 # Function to use ChatCompletion and get response
+conversation_history = []
+
+
 def get_response(text):
+    global conversation_history
+
     with open("sysmsg.txt", "r") as file:
         system_message = file.read().strip()
+
+    if not conversation_history:
+        conversation_history.append({"role": "system", "content": system_message})
+
+    conversation_history.append({"role": "user", "content": text})
+
+    while sum(len(msg["content"]) for msg in conversation_history) > 3000:
+        conversation_history.pop(0)
+
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": text}
-        ]
+        messages=conversation_history
     )
-    return response.choices[0].message['content'].strip()
+
+    reply = response.choices[0].message['content'].strip()
+    conversation_history.append({"role": "assistant", "content": reply})
+
+    return reply
 
 def play_response(text):
     voice = "en_US/vctk_low#p264"
