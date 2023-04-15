@@ -112,8 +112,8 @@ import threading
 def play_response(text):
     voice = "en_US/vctk_low#p264"
 
-    # Split the input text into individual lines or sentences
-    sentences = nltk.tokenize.sent_tokenize(text)
+    # Split the input text into individual lines
+    sentences = text.split('\n')
 
     # Create a function to play the audio_segment in a separate thread
     def play_audio(audio_segment):
@@ -130,8 +130,11 @@ def play_response(text):
         while pygame.mixer.music.get_busy():
             pygame.time.Clock().tick(10)
 
-    # Process each sentence
-    for sentence in sentences:
+    # Process sentences and buffer the playback after 5 sentences
+    buffered_audio = AudioSegment.empty()
+    buffer_size = 5
+
+    for idx, sentence in enumerate(sentences, start=1):
         # Create a temporary file to store the current sentence
         with NamedTemporaryFile(delete=False, mode="w+") as temp_file:
             temp_file.write(sentence)
@@ -154,12 +157,17 @@ def play_response(text):
                 # Pass the wav_data directly to AudioSegment.from_file
                 audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-                # Start a new thread to play the audio_segment
-                playback_thread = threading.Thread(target=play_audio, args=(audio_segment,))
-                playback_thread.start()
+                buffered_audio += audio_segment
 
-                # Wait for the playback_thread to finish before moving on to the next sentence
-                playback_thread.join()
+                # Play the buffered_audio after processing 5 sentences or reaching the end
+                if idx % buffer_size == 0 or idx == len(sentences):
+                    playback_thread = threading.Thread(target=play_audio, args=(buffered_audio,))
+                    playback_thread.start()
+                    playback_thread.join()
+
+                    # Reset the buffered_audio
+                    buffered_audio = AudioSegment.empty()
+
             else:
                 print(f"Error: Mimic3 server returned status code {response.status_code}")
 
