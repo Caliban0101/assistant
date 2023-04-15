@@ -77,60 +77,23 @@ def transcribe_speech():
 def get_response(text):
     with open("sysmsg.txt", "r") as file:
         system_message = file.read().strip()
-
-    delay_time = 0.01
-    max_response_length = 200
-    response_text = ""
-
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": system_message},
             {"role": "user", "content": text}
-        ],
-        max_tokens=max_response_length,
-        temperature=0,
-        stream=True,
+        ]
     )
-
-    for event in response:
-        event_text = event['choices'][0]['delta']
-        content = event_text.get('content', '')
-        response_text += content
-        play_response(content)
-        time.sleep(delay_time)
-
-    return response_text.strip()
+    return response.choices[0].message['content'].strip()
 
 
-def play_audio_from_queue(audio_queue):
-    stream = p.open(
-        format=pyaudio.paInt16,
-        channels=1,
-        rate=22050,
-        output=True,
-    )
-
-    while True:
-        audio_chunk = audio_queue.get()
-        if audio_chunk is None:
-            break
-
-        stream.write(audio_chunk)
-
-    stream.stop_stream()
-    stream.close()
 
 def play_response(text):
-    env_path = "/home/rcolman/mimic3/.venv"
+    env_path = "/home/rcolman"
     voice = "en_US/m-ailabs_low#mary_ann"
 
-    audio_queue = Queue(maxsize=5)
-    audio_thread = threading.Thread(target=play_audio_from_queue, args=(audio_queue,))
-    audio_thread.start()
-
     mimic3_process = subprocess.Popen(
-        [f"{env_path}/bin/mimic3", "--interactive", "--process-on-blank-line", "--voice", voice],
+        [f"{env_path}/mimic3", "--interactive", "--process-on-blank-line", "--voice", voice],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -140,6 +103,35 @@ def play_response(text):
 
     mimic3_process.stdin.write(text + "\n")
     mimic3_process.stdin.flush()
+
+    wav_data = b""
+    while True:
+        line = mimic3_process.stdout.readline()
+        if line.startswith("WV:"):
+            wav_data.extend(bytes.fromhex(line[3:].strip()))
+        elif line.startswith("WV-END"):
+            break
+        else:
+            print(f"Unexpected output: {line.strip()}")
+
+    with BytesIO(wav_data) as f:
+        # Use wave and pyaudio modules to play the audio
+        wav_file = wave.open(f, 'rb')
+        stream = p.open(format=p.get_format_from_width(wav_file.getsampwidth()),
+                        channels=wav_file.getnchannels(),
+                        rate=wav_file.getframerate(),
+                        output=True)
+
+        # Read and play audio data in chunks
+        data = wav_file.readframes(1024)
+        while data:
+            stream.write(data)
+            data = wav_file.readframes(1024)
+
+        # Stop and close the stream
+        stream.stop_stream()
+        stream.close()
+
 
 
 
