@@ -1,7 +1,6 @@
 import time
 import os
 import threading
-from queue import Queue
 import openai
 import pyaudio
 import sys
@@ -19,7 +18,7 @@ from pydub import AudioSegment
 from pydub.playback import play
 import asyncio
 from pydub.playback import _play_with_simpleaudio as play_async
-
+import queue
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
@@ -113,10 +112,18 @@ def get_response(text):
 
 import threading
 
-async def play_audio(audio_segment):
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, play_async, audio_segment)
+audio_queue = queue.Queue()
 
+def audio_player():
+    while True:
+        audio_segment = audio_queue.get()
+        if audio_segment is None:
+            break
+        play_async(audio_segment)
+        audio_queue.task_done()
+
+player_thread = threading.Thread(target=audio_player)
+player_thread.start()
 
 async def play_response(text):
     voice = "en_US/vctk_low#p264"
@@ -125,7 +132,6 @@ async def play_response(text):
     sentences = text.split(".")
 
     # Process each sentence
-    combined_audio = []
     for sentence in sentences:
         # Send a request to the Mimic3 server
         response = requests.post(
@@ -140,26 +146,14 @@ async def play_response(text):
             # Pass the wav_data directly to AudioSegment.from_file
             audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-            combined_audio.append(audio_segment)
+            audio_queue.put(audio_segment)
         else:
             print(f"Error: Mimic3 server returned status code {response.status_code}")
 
-    # Play the combined audio with a 5-sentence buffer
-    buffer_size = 5
-    for i, audio_segment in enumerate(combined_audio):
-        if i < buffer_size:
-            play_async(audio_segment)
-        else:
-            asyncio.ensure_future(play_audio(audio_segment))
-
-        # Wait for the duration of the current audio segment before playing the next one
-        await asyncio.sleep(len(audio_segment) / 1000)
-
-
-
-
-
-
+    # Stop the player thread after all audio segments have been processed
+    audio_queue.put(None)
+    player_thread.join()
+    
 # Main loop
 while True:
     if listen_for_activation_word():
