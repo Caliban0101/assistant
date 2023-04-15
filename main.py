@@ -94,7 +94,7 @@ def play_response(text):
 
     # Send a request to the Mimic3 server
     response = requests.post(
-        f"{mimic3_server_url}/api/tts?voice={voice} {text}",
+        f"{mimic3_server_url}/api/tts?voice={voice} --text {text}",
     )
 
     if response.status_code == 200:
