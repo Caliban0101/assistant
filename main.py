@@ -12,7 +12,7 @@ import subprocess
 import pygame
 from io import BytesIO
 import wave
-
+import requests
 
 if not sys.warnoptions:
     os.environ['PYTHONWARNINGS'] = 'ignore:ResourceWarning'
@@ -31,6 +31,9 @@ activation_word = "margaret"
 
 # Vosk Model
 model = Model("vosk-model-small-en-us-0.15")
+
+# Mimic3 server URL
+mimic3_server_url = "http://localhost:59125"
 
 # Function to listen for activation word
 def listen_for_activation_word():
@@ -86,37 +89,37 @@ def get_response(text):
     )
     return response.choices[0].message['content'].strip()
 
-
-
 def play_response(text):
-    env_path = "/home/rcolman/mimic3/.venv/bin"
     voice = "en_US/m-ailabs_low#mary_ann"
 
-    with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as tmp_file:
-        tmp_file.write(text)
-        tmp_file.flush()
+    # Send a request to the Mimic3 server
+    response = requests.post(
+        f"{mimic3_server_url}/api/tts?voice={voice}",
+        data=text.encode("utf-8"),
+        headers={"Content-Type": "text/plain"},
+    )
 
-        # Update the PATH to include the virtual environment's bin directory
-        my_env = os.environ.copy()
-        my_env["PATH"] = f"{env_path}:{my_env['PATH']}"
+    if response.status_code == 200:
+        wav_data = BytesIO(response.content)
 
-        mimic3_process = subprocess.Popen(
-            ["mimic3", "--interactive", "--voice", voice],
-            stdin=tmp_file,
-            stderr=subprocess.PIPE,
-            env=my_env,
-        )
+        with wav_data as f:
+            wav_file = wave.open(f, 'rb')
+            stream = p.open(format=p.get_format_from_width(wav_file.getsampwidth()),
+                            channels=wav_file.getnchannels(),
+                            rate=wav_file.getframerate(),
+                            output=True)
 
-        stderr_data, _ = mimic3_process.communicate()
-        os.unlink(tmp_file.name)
+            # Read and play audio data in chunks
+            data = wav_file.readframes(1024)
+            while data:
+                stream.write(data)
+                data = wav_file.readframes(1024)
 
-    if mimic3_process.returncode != 0 and stderr_data:
-        print(f"Mimic3 encountered an error: {stderr_data.decode('utf-8')}")
-
-
-
-
-
+            # Stop and close the stream
+            stream.stop_stream()
+            stream.close()
+    else:
+        print(f"Error: Mimic3 server returned status code {response.status_code}")
 
 # Main loop
 while True:
@@ -129,7 +132,3 @@ while True:
             play_response(response_text)
         else:
             print("Could not understand your question")
-
-# Close Mimic3 when done
-close_mimic3()
-
