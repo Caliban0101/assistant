@@ -110,21 +110,8 @@ def get_response(text):
 
     return reply
 
-import threading
 
 audio_queue = queue.Queue()
-
-def audio_player():
-    while True:
-        audio_segment = audio_queue.get()
-        if audio_segment is None:
-            break
-        play_async(audio_segment)
-        audio_queue.task_done()
-        time.sleep(audio_segment.duration_seconds)  # Wait for the current audio segment to finish playing
-
-player_thread = threading.Thread(target=audio_player)
-player_thread.start()
 
 async def play_response(text):
     voice = "en_US/vctk_low#p264"
@@ -134,7 +121,7 @@ async def play_response(text):
 
     # Start the player thread
     player_thread = threading.Thread(target=audio_player)
-    player_thread.start()  # This line is added
+    player_thread.start()
 
     # Process each sentence
     for sentence in sentences:
@@ -156,8 +143,27 @@ async def play_response(text):
             print(f"Error: Mimic3 server returned status code {response.status_code}")
 
     # Stop the player thread after all audio segments have been processed
-    audio_queue.put(None)  # This line is added
-    player_thread.join()   # This line is added
+    audio_queue.put(None)
+    player_thread.join()
+
+def audio_player():
+    current_audio = None
+
+    while True:
+        next_audio = audio_queue.get()
+        if next_audio is None:
+            if current_audio is not None:
+                play(current_audio)
+            break
+
+        if current_audio is None:
+            current_audio = next_audio
+        else:
+            current_audio += next_audio
+            play(current_audio)  # Move this line inside the else block
+
+        # Reset current_audio for the next playback cycle
+        current_audio = None  # This line is added
 
 
 # Main loop
