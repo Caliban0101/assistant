@@ -107,11 +107,28 @@ def get_response(text):
 
     return reply
 
+import threading
+
 def play_response(text):
     voice = "en_US/vctk_low#p264"
 
     # Split the input text into individual lines or sentences
     sentences = nltk.tokenize.sent_tokenize(text)
+
+    # Create a function to play the audio_segment in a separate thread
+    def play_audio(audio_segment):
+        # Export audio_segment to a BytesIO object as an MP3
+        audio_data = BytesIO()
+        audio_segment.export(audio_data, format="mp3")
+        audio_data.seek(0)
+
+        # Load the audio data into pygame.mixer.music
+        pygame.mixer.music.load(audio_data)
+
+        # Play the audio and wait for its completion
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(10)
 
     # Process each sentence
     for sentence in sentences:
@@ -137,10 +154,15 @@ def play_response(text):
                 # Pass the wav_data directly to AudioSegment.from_file
                 audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-                # Play the audio segment immediately
-                play(audio_segment)
+                # Start a new thread to play the audio_segment
+                playback_thread = threading.Thread(target=play_audio, args=(audio_segment,))
+                playback_thread.start()
+
+                # Wait for the playback_thread to finish before moving on to the next sentence
+                playback_thread.join()
             else:
                 print(f"Error: Mimic3 server returned status code {response.status_code}")
+
 
 
 
