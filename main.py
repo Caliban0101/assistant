@@ -113,7 +113,7 @@ def get_response(text):
 
 audio_queue = Queue()
 
-def play_response(text):
+async def play_response(text):
     voice = "en_US/vctk_low#p264"
 
     # Split the input text into individual lines
