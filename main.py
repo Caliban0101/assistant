@@ -17,6 +17,8 @@ from tempfile import NamedTemporaryFile
 import nltk
 from pydub import AudioSegment
 from pydub.playback import play
+import asyncio
+from pydub.playback import _play_with_simpleaudio as play_async
 
 
 if not sys.warnoptions:
@@ -111,21 +113,26 @@ def get_response(text):
 
 import threading
 
-def play_response(text):
+async def play_audio(audio_segment):
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, play_async, audio_segment)
+
+
+async def play_response(text):
     voice = "en_US/vctk_low#p264"
 
     # Split the input text into individual lines
-    sentences = text.split('.')
+    sentences = text.split("\n")
 
     # Process each sentence
+    combined_audio = []
     for sentence in sentences:
         # Send a request to the Mimic3 server
         response = requests.post(
             f"{mimic3_server_url}/api/tts?voice={voice}",
-            data=sentence,
+            data=sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-        print("sent")
 
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
@@ -133,10 +140,17 @@ def play_response(text):
             # Pass the wav_data directly to AudioSegment.from_file
             audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-            # Play the audio segment
-            play(audio_segment)
+            combined_audio.append(audio_segment)
         else:
             print(f"Error: Mimic3 server returned status code {response.status_code}")
+
+    # Play the combined audio with a 5-sentence buffer
+    buffer_size = 5
+    for i, audio_segment in enumerate(combined_audio):
+        if i >= buffer_size:
+            asyncio.ensure_future(play_audio(audio_segment))
+        else:
+            play_async(audio_segment)
 
 
 
@@ -149,6 +163,6 @@ while True:
             print("You asked:", question)
             response_text = get_response(question)
             print("Assistant:", response_text)
-            play_response(response_text)
+            asyncio.run(play_response(response_text))
         else:
             print("Could not understand your question")
