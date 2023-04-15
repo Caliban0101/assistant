@@ -165,23 +165,6 @@ def play_response(text):
 
 
 
-
-# Function to play the audio using pydub
-def play(audio_segment):
-    # Export audio_segment to a BytesIO object as an MP3
-    audio_data = BytesIO()
-    audio_segment.export(audio_data, format="mp3")
-    audio_data.seek(0)
-
-    # Load the audio data into pygame.mixer.music
-    pygame.mixer.music.load(audio_data)
-
-    # Play the audio and wait for its completion
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
-
-
 # Main loop
 while True:
     if listen_for_activation_word():
