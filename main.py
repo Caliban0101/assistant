@@ -122,7 +122,7 @@ def play_audio_from_queue(audio_queue):
     stream.close()
 
 def play_response(text):
-    env_path = "/home/rcolman/mimic3/venv"
+    env_path = "/home/rcolman/"
     voice = "en_US/m-ailabs_low#mary_ann"
 
     audio_queue = Queue(maxsize=5)
