@@ -114,7 +114,6 @@ def play_response(text):
     sentences = nltk.tokenize.sent_tokenize(text)
 
     # Process each sentence
-    combined_audio = None
     for sentence in sentences:
         # Create a temporary file to store the current sentence
         with NamedTemporaryFile(delete=False, mode="w+") as temp_file:
@@ -138,25 +137,28 @@ def play_response(text):
                 # Pass the wav_data directly to AudioSegment.from_file
                 audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-                if combined_audio is None:
-                    combined_audio = audio_segment
-                else:
-                    combined_audio += audio_segment
+                # Play the audio segment immediately
+                play(audio_segment)
             else:
                 print(f"Error: Mimic3 server returned status code {response.status_code}")
 
-    # Play the combined audio
-    if combined_audio:
-        play(combined_audio)
-    else:
-        print("No audio data to play.")
 
 
 # Function to play the audio using pydub
 def play(audio_segment):
-    from pydub.playback import play as playback
+    # Export audio_segment to a BytesIO object as an MP3
+    audio_data = BytesIO()
+    audio_segment.export(audio_data, format="mp3")
+    audio_data.seek(0)
 
-    playback(audio_segment)
+    # Load the audio data into pygame.mixer.music
+    pygame.mixer.music.load(audio_data)
+
+    # Play the audio and wait for its completion
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)
+
 
 # Main loop
 while True:
