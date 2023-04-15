@@ -135,22 +135,22 @@ async def play_response(text):
     # Process each sentence
     for sentence in sentences:
         if sentence is not None:
-        # Send a request to the Mimic3 server
-        response = requests.post(
-            f"{mimic3_server_url}/api/tts?voice={voice}",
-            data=sentence.encode(),
-            headers={"Content-Type": "text/plain"},
-        )
-        print("sent")
-        if response.status_code == 200:
-            wav_data = BytesIO(response.content)
+            # Send a request to the Mimic3 server
+            response = requests.post(
+                f"{mimic3_server_url}/api/tts?voice={voice}",
+                data=sentence.encode(),
+                headers={"Content-Type": "text/plain"},
+            )
+            print("sent")
+            if response.status_code == 200:
+                wav_data = BytesIO(response.content)
 
-            # Pass the wav_data directly to AudioSegment.from_file
-            audio_segment = AudioSegment.from_file(wav_data, format="wav")
+                # Pass the wav_data directly to AudioSegment.from_file
+                audio_segment = AudioSegment.from_file(wav_data, format="wav")
 
-            audio_queue.put(audio_segment)
-        else:
-            print(f"Error: Mimic3 server returned status code {response.status_code}")
+                audio_queue.put(audio_segment)
+            else:
+                print(f"Error: Mimic3 server returned status code {response.status_code}")
 
     # Stop the player thread after all audio segments have been processed
     audio_queue.put(None)
