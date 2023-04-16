@@ -162,7 +162,7 @@ async def play_response(sentence_generator):
             data=sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-        print("sent")
+        print("sent" + ": " + sentence)
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
 
