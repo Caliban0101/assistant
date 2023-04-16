@@ -218,5 +218,10 @@ if __name__ == "__main__":
     main_loop_thread = threading.Thread(target=loop_voice.run_until_complete, args=(main_loop(),))
     main_loop_thread.start()
 
-    # Start listening for keyboard input in the main thread
-    listen_for_keyboard_input()
+    # Start the keyboard input listening in a new thread
+    keyboard_input_thread = threading.Thread(target=listen_for_keyboard_input)
+    keyboard_input_thread.start()
+
+    # Wait for the threads to finish
+    main_loop_thread.join()
+    keyboard_input_thread.join()
