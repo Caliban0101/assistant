@@ -43,15 +43,6 @@ mimic3_server_url = "http://0.0.0.0:59125"
 
 audio_queue = Queue()
 
-async def listen_for_keyboard_input():
-    while True:
-        question = await loop_keyboard.run_in_executor(None, input, "Type your question: ")
-        if question:
-            await handle_question(question)
-
-
-
-
 # Function to listen for activation word
 def listen_for_activation_word():
     recognizer = KaldiRecognizer(model, 48000)
@@ -115,6 +106,31 @@ def audio_player():
 
 # Function to use ChatCompletion and get response
 conversation_history = []
+
+async def listen_for_input():
+    # Create tasks for both voice and keyboard inputs
+    activation_word_task = loop_voice.run_in_executor(None, listen_for_activation_word)
+    keyboard_input_task = loop_keyboard.run_in_executor(None, input, "Type your question: ")
+
+    # Run tasks concurrently and wait for the first one to complete
+    done, pending = await asyncio.wait(
+        [activation_word_task, keyboard_input_task],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    # Cancel the pending task
+    for task in pending:
+        task.cancel()
+
+    # Get the question from the completed task
+    question = done.pop().result()
+
+    # If it's a voice input, transcribe the question
+    if question == activation_word:
+        question = transcribe_speech()
+
+    return question
+
 
 
 async def get_response(text):
@@ -199,14 +215,12 @@ async def handle_question(question):
 # Main loop
 async def main_loop():
     while True:
-        if listen_for_activation_word():
-            question = transcribe_speech()
-            if question:
-                print("You asked:", question)
-                sentence_generator = get_response(question)
-                await play_response(sentence_generator)
-            else:
-                print("Could not understand your question")
+        question = await listen_for_input()
+        if question:
+            print("You asked:", question)
+            sentence_generator = get_response(question)
+            await play_response(sentence_generator)
+
 
 
 
