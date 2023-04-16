@@ -43,6 +43,10 @@ mimic3_server_url = "http://0.0.0.0:59125"
 
 audio_queue = Queue()
 
+def keyboard_input():
+    return input("Type your question: ")
+
+
 # Function to listen for activation word
 def listen_for_activation_word():
     recognizer = KaldiRecognizer(model, 48000)
@@ -110,7 +114,7 @@ conversation_history = []
 async def listen_for_input():
     # Create tasks for both voice and keyboard inputs
     activation_word_task = loop_voice.run_in_executor(None, listen_for_activation_word)
-    keyboard_input_task = loop_keyboard.run_in_executor(None, input, "Type your question: ")
+    keyboard_input_task = loop_keyboard.run_in_executor(None, keyboard_input)
 
     # Run tasks concurrently and wait for the first one to complete
     done, pending = await asyncio.wait(
@@ -130,7 +134,6 @@ async def listen_for_input():
         question = transcribe_speech()
 
     return question
-
 
 
 async def get_response(text):
