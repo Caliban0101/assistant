@@ -43,11 +43,12 @@ mimic3_server_url = "http://0.0.0.0:59125"
 
 audio_queue = Queue()
 
-def listen_for_keyboard_input():
+async def listen_for_keyboard_input():
     while True:
-        question = input("Type your question: ")
+        question = await loop_keyboard.run_in_executor(None, input, "Type your question: ")
         if question:
-            loop_keyboard.run_until_complete(handle_question(question))
+            await handle_question(question)
+
 
 
 
@@ -210,18 +211,5 @@ async def main_loop():
 
 
 if __name__ == "__main__":
-    # Create event loops for voice commands and keyboard input
-    loop_voice = asyncio.new_event_loop()
-    loop_keyboard = asyncio.new_event_loop()
-
-    # Start the main loop for voice commands in a new thread
-    main_loop_thread = threading.Thread(target=loop_voice.run_until_complete, args=(main_loop(),))
-    main_loop_thread.start()
-
-    # Start the keyboard input listening in a new thread
-    keyboard_input_thread = threading.Thread(target=listen_for_keyboard_input)
-    keyboard_input_thread.start()
-
-    # Wait for the threads to finish
-    main_loop_thread.join()
-    keyboard_input_thread.join()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(main_loop(), listen_for_keyboard_input()))
