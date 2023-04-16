@@ -176,16 +176,21 @@ async def play_response(sentence_generator):
 
 
 # Main loop
-while True:
-    if listen_for_activation_word():
-        question = transcribe_speech()
-        if question:
-            print("You asked:", question)
-            sentence_generator = get_response(question)
-            response_text = ""
-            async for sentence in sentence_generator:
-                response_text += sentence
-            print("Assistant:", response_text)
-            asyncio.run(play_response(sentence_generator))
-        else:
-            print("Could not understand your question")
+async def main_loop():
+    while True:
+        if listen_for_activation_word():
+            question = transcribe_speech()
+            if question:
+                print("You asked:", question)
+                sentence_generator = get_response(question)
+                response_text = ""
+                async for sentence in sentence_generator:
+                    response_text += sentence
+                print("Assistant:", response_text)
+                await play_response(sentence_generator)
+            else:
+                print("Could not understand your question")
+
+if __name__ == "__main__":
+    asyncio.run(main_loop())
+
