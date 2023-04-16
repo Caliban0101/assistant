@@ -134,7 +134,7 @@ async def get_response(text):
         delta = chunk.get("choices")[0].get("delta", {})
         content = delta.get("content")
         if content is not None:
-            partial_sentence += content.strip()
+            partial_sentence += " " + content.strip()  # Add a space before appending the content
 
             if '.' in partial_sentence:
                 sentences = partial_sentence.split('.')
@@ -145,6 +145,7 @@ async def get_response(text):
 
     if partial_sentence:
         yield partial_sentence.strip()
+
 
 
 async def play_response(sentence_generator):
