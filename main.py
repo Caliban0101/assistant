@@ -43,9 +43,6 @@ mimic3_server_url = "http://0.0.0.0:59125"
 
 audio_queue = Queue()
 
-def keyboard_input():
-    return input("Type your question: ")
-
 
 # Function to listen for activation word
 def listen_for_activation_word():
@@ -111,30 +108,6 @@ def audio_player():
 # Function to use ChatCompletion and get response
 conversation_history = []
 
-async def listen_for_input():
-    # Create tasks for both voice and keyboard inputs
-    activation_word_task = loop_voice.run_in_executor(None, listen_for_activation_word)
-    keyboard_input_task = loop_keyboard.run_in_executor(None, keyboard_input)
-
-    # Run tasks concurrently and wait for the first one to complete
-    done, pending = await asyncio.wait(
-        [activation_word_task, keyboard_input_task],
-        return_when=asyncio.FIRST_COMPLETED,
-    )
-
-    # Cancel the pending task
-    for task in pending:
-        task.cancel()
-
-    # Get the question from the completed task
-    question = done.pop().result()
-
-    # If it's a voice input, transcribe the question
-    if question == activation_word:
-        question = transcribe_speech()
-
-    return question
-
 
 async def get_response(text):
     global conversation_history
@@ -195,7 +168,7 @@ async def play_response(sentence_generator):
             data=sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-        print("sent: " + sentence)
+        print("sent: "+ sentence)
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
 
@@ -209,31 +182,23 @@ async def play_response(sentence_generator):
     player_thread.join()
 
 
-async def handle_question(question):
-    print("You asked:", question)
-    sentence_generator = get_response(question)
-    await play_response(sentence_generator)
+
 
 
 # Main loop
 async def main_loop():
     while True:
-        question = await listen_for_input()
-        if question:
-            print("You asked:", question)
-            sentence_generator = get_response(question)
-            await play_response(sentence_generator)
-
+        if listen_for_activation_word():
+            question = transcribe_speech()
+            if question:
+                print("You asked:", question)
+                sentence_generator = get_response(question)
+                await play_response(sentence_generator)
+            else:
+                print("Could not understand your question")
 
 
 
 if __name__ == "__main__":
-    # Create event loops for voice commands and keyboard input
-    loop_voice = asyncio.new_event_loop()
-    loop_keyboard = asyncio.new_event_loop()
+    asyncio.run(main_loop())
 
-    # Set the current event loop for the main thread to loop_voice
-    asyncio.set_event_loop(loop_voice)
-
-    # Run the main loop for voice commands in the main thread
-    loop_voice.run_until_complete(main_loop())
