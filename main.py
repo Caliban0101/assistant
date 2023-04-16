@@ -182,7 +182,9 @@ while True:
         if question:
             print("You asked:", question)
             sentence_generator = get_response(question)
-            response_text = " ".join([sentence async for sentence in sentence_generator])
+            response_text = ""
+            async for sentence in sentence_generator:
+                response_text += sentence
             print("Assistant:", response_text)
             asyncio.run(play_response(sentence_generator))
         else:
