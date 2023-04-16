@@ -47,7 +47,7 @@ def listen_for_keyboard_input():
     while True:
         question = input("Type your question: ")
         if question:
-            asyncio.run_coroutine_threadsafe(handle_question(question), loop)
+            loop_keyboard.run_until_complete(handle_question(question))
 
 
 
@@ -210,11 +210,12 @@ async def main_loop():
 
 
 if __name__ == "__main__":
-    # Create an event loop
-    loop = asyncio.get_event_loop()
+    # Create event loops for voice commands and keyboard input
+    loop_voice = asyncio.new_event_loop()
+    loop_keyboard = asyncio.new_event_loop()
 
-    # Start the main loop in a new thread
-    main_loop_thread = threading.Thread(target=loop.run_until_complete, args=(main_loop(),))
+    # Start the main loop for voice commands in a new thread
+    main_loop_thread = threading.Thread(target=loop_voice.run_until_complete, args=(main_loop(),))
     main_loop_thread.start()
 
     # Start listening for keyboard input in the main thread
