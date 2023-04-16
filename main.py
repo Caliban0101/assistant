@@ -47,7 +47,8 @@ def listen_for_keyboard_input():
     while True:
         question = input("Type your question: ")
         if question:
-            asyncio.run_coroutine_threadsafe(handle_question(question), asyncio.get_event_loop())
+            asyncio.run_coroutine_threadsafe(handle_question(question), main_loop_task.get_loop())
+
 
 
 # Function to listen for activation word
@@ -174,7 +175,7 @@ async def play_response(sentence_generator):
             data=sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-        print("sent")
+        print("sent: " + sentence)
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
 
@@ -210,7 +211,8 @@ async def main_loop():
 
 if __name__ == "__main__":
     # Start the main loop in a new thread
-    main_loop_thread = threading.Thread(target=asyncio.run, args=(main_loop(),))
+    main_loop_task = asyncio.create_task(main_loop())
+    main_loop_thread = threading.Thread(target=asyncio.run, args=(main_loop_task,))
     main_loop_thread.start()
 
     # Start listening for keyboard input in the main thread
