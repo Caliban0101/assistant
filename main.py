@@ -148,6 +148,12 @@ async def get_response(text):
 
 
 
+def clean_text(text):
+    cleaned_text = text.replace(" '", "'").replace(" ,", ",").replace(" .", ".").replace(" !", "!").replace(" ?", "?").replace(" :", ":").replace(" ;", ";").replace(" -", "-")
+    return cleaned_text
+
+
+
 async def play_response(sentence_generator):
     voice = "en_US/vctk_low#p238"
 
@@ -157,12 +163,13 @@ async def play_response(sentence_generator):
 
     # Process each sentence
     async for sentence in sentence_generator:
+        cleaned_sentence = clean_text(sentence)
         response = requests.post(
             f"{mimic3_server_url}/api/tts?voice={voice}",
-            data=sentence.encode(),
+            data=cleaned_sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-        print("sent" + ": " + sentence)
+        print("sent")
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
 
@@ -174,6 +181,7 @@ async def play_response(sentence_generator):
     # Stop the player thread after all audio segments have been processed
     audio_queue.put(None)
     player_thread.join()
+
 
 
 
