@@ -225,5 +225,12 @@ async def main_loop():
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(main_loop(), listen_for_keyboard_input()))
+    # Create event loops for voice commands and keyboard input
+    loop_voice = asyncio.new_event_loop()
+    loop_keyboard = asyncio.new_event_loop()
+
+    # Set the current event loop for the main thread to loop_voice
+    asyncio.set_event_loop(loop_voice)
+
+    # Run the main loop for voice commands in the main thread
+    loop_voice.run_until_complete(main_loop())
