@@ -185,11 +185,10 @@ async def main_loop():
             if question:
                 print("You asked:", question)
                 sentence_generator = get_response(question)
-                response_text = " ".join([sentence async for sentence in sentence_generator])
-                print("Assistant:", response_text)
                 await play_response(sentence_generator)
             else:
                 print("Could not understand your question")
+
 
 
 if __name__ == "__main__":
