@@ -43,6 +43,12 @@ mimic3_server_url = "http://0.0.0.0:59125"
 
 audio_queue = Queue()
 
+def listen_for_keyboard_input():
+    while True:
+        question = input("Type your question: ")
+        if question:
+            asyncio.run_coroutine_threadsafe(handle_question(question), asyncio.get_event_loop())
+
 
 # Function to listen for activation word
 def listen_for_activation_word():
@@ -134,17 +140,17 @@ async def get_response(text):
         delta = chunk.get("choices")[0].get("delta", {})
         content = delta.get("content")
         if content is not None:
-            partial_sentence += " " + content.strip()  # Add a space before appending the content
+            partial_sentence += content  # Directly append the content without stripping or adding space
 
             if '.' in partial_sentence:
                 sentences = partial_sentence.split('.')
                 for sentence in sentences[:-1]:
-                    yield sentence.strip() + '.'
+                    yield clean_text(sentence) + '.'  # Use the clean_text function here
 
                 partial_sentence = sentences[-1]
 
     if partial_sentence:
-        yield partial_sentence.strip()
+        yield clean_text(partial_sentence)  # Use the clean_text function here
 
 
 
@@ -163,13 +169,12 @@ async def play_response(sentence_generator):
 
     # Process each sentence
     async for sentence in sentence_generator:
-        cleaned_sentence = clean_text(sentence)
         response = requests.post(
             f"{mimic3_server_url}/api/tts?voice={voice}",
-            data=cleaned_sentence.encode(),
+            data=sentence.encode(),
             headers={"Content-Type": "text/plain"},
         )
-        print("sent" + ": " + sentence)
+        print("sent")
         if response.status_code == 200:
             wav_data = BytesIO(response.content)
 
@@ -183,6 +188,10 @@ async def play_response(sentence_generator):
     player_thread.join()
 
 
+async def handle_question(question):
+    print("You asked:", question)
+    sentence_generator = get_response(question)
+    await play_response(sentence_generator)
 
 
 # Main loop
@@ -200,5 +209,9 @@ async def main_loop():
 
 
 if __name__ == "__main__":
-    asyncio.run(main_loop())
+    # Start the main loop in a new thread
+    main_loop_thread = threading.Thread(target=asyncio.run, args=(main_loop(),))
+    main_loop_thread.start()
 
+    # Start listening for keyboard input in the main thread
+    listen_for_keyboard_input()
