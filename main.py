@@ -176,6 +176,7 @@ async def play_response(sentence_generator):
     player_thread.join()
 
 
+
 # Main loop
 async def main_loop():
     while True:
@@ -183,13 +184,12 @@ async def main_loop():
             question = transcribe_speech()
             if question:
                 print("You asked:", question)
-                sentence_generator = await get_response(question)  # Use 'await' to call the async function
+                sentence_generator = get_response(question)
                 response_text = " ".join([sentence async for sentence in sentence_generator])
                 print("Assistant:", response_text)
                 await play_response(sentence_generator)
             else:
                 print("Could not understand your question")
-
 
 
 if __name__ == "__main__":
